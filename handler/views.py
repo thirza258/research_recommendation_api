@@ -232,9 +232,7 @@ class ResearchRecommendation(APIView):
                     data.extend(json_data)  
                 else:
                     data.append(json_data) 
-                    
-            print(data) 
-
+                
             text_inputs = [json.dumps(item) for item in data]  # Ensure input is a valid string
 
             text_embeddings = np.array([get_text_embedding(i) for i in text_inputs])
