@@ -53,10 +53,6 @@ MISTRAL_API_KEY=your_mistral_api_key
 ### 6. Load Environment Variables in Django
 Modify `myproject/settings.py` to load the environment variables:
 ```python
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY')

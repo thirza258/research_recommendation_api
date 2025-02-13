@@ -14,6 +14,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 import time
+import random
+import re
 
 # Create your views here.
 
@@ -225,29 +227,27 @@ class ResearchRecommendation(APIView):
             data = []
           
             for i in day_recommendation["keyword"]:
-                time.sleep(5) 
+                time.sleep(3) 
                 json_data = fetch_with_retries(i)
 
                 if isinstance(json_data, list):  
                     data.extend(json_data)  
                 else:
                     data.append(json_data) 
-                
-            text_inputs = [json.dumps(item) for item in data]  # Ensure input is a valid string
+            
+            # text_inputs = [json.dumps(item) for item in data]  # Ensure input is a valid string
 
-            text_embeddings = np.array([get_text_embedding(i) for i in text_inputs])
+            # text_embeddings = np.array([get_text_embedding(i) for i in text_inputs])
 
-            d = text_embeddings.shape[1]
-            index = faiss.IndexFlatL2(d)
-            index.add(text_embeddings)
+            # d = text_embeddings.shape[1]
+            # index = faiss.IndexFlatL2(d)
+            # index.add(text_embeddings)
 
-            question_embedding = np.array([get_text_embedding(json.dumps(search_request))])  # Convert question to JSON string
-            print(question_embedding.shape)
-            D, I = index.search(question_embedding, k=5)
+            # question_embedding = np.array([get_text_embedding(json.dumps(search_request))])  # Convert question to JSON string
+            # print(question_embedding.shape)
+            # D, I = index.search(question_embedding, k=5)
 
-            retrieved_data = [data[i] for i in I[0]]
-
-            print(retrieved_data)
+            # retrieved_data = [data[i] for i in I[0]]
             
             generation_config = {
                 "temperature": 1,
@@ -290,18 +290,6 @@ class ResearchRecommendation(APIView):
                     {
                     "role": "user",
                     "parts": [
-                        "What is the research about argiculture\n",
-                    ],
-                    },
-                    {
-                    "role": "model",
-                    "parts": [
-                        "```json\n{\n  \"response\": [\n    {\n      \"title\": \"Personalizing Sustainable Agriculture with Causal Machine Learning\",\n      \"url\": \"http://arxiv.org/pdf/2211.03179v1\"\n    },\n    {\n      \"title\": \"YOLOv1 to YOLOv10: A comprehensive review of YOLO variants and their application in the agricultural domain\",\n      \"url\": \"http://arxiv.org/pdf/2406.10139v1\"\n    },\n    {\n      \"title\": \"Transforming Agriculture: Exploring Diverse Practices and Technological Innovations\",\n      \"url\": \"http://arxiv.org/pdf/2411.00643v1\"\n    },\n    {\n      \"title\": \"Harnessing Artificial Intelligence for Sustainable Agricultural Development in Africa: Opportunities, Challenges, and Impact\",\n      \"url\": \"http://arxiv.org/pdf/2401.06171v1\"\n    },\n    {\n      \"title\": \"EcoWeedNet: A Lightweight and Automated Weed Detection Method for Sustainable Next-Generation Agricultural Consumer Electronics\",\n      \"url\": \"http://arxiv.org/pdf/2502.00205v1\"\n    },\n    {\n      \"title\": \"Smart Sustainable Agriculture (SSA) Solution Underpinned by Internet of Things (IoT) and Artificial Intelligence (AI)\",\n      \"url\": \"http://arxiv.org/pdf/1906.03106v1\"\n    },\n    {\n      \"title\": \"Employing Drones in Agriculture: An Exploration of Various Drone Types and Key Advantages\",\n      \"url\": \"http://arxiv.org/pdf/2307.04037v2\"\n    }\n  ]\n}\n```",
-                    ],
-                    },
-                    {
-                    "role": "user",
-                    "parts": [
                         "add the summary",
                     ],
                     },
@@ -315,6 +303,7 @@ class ResearchRecommendation(APIView):
             )
             
 
+            random_data = random.sample(data, min(5, len(data)))
             response = chat_session.send_message(f"""
                 Based on the provided context here are some research papers that most correlate with
                 the provided prompt
@@ -324,19 +313,36 @@ class ResearchRecommendation(APIView):
                 
                 giving the context of the research papers
                 <context>
-                {retrieved_data}
+                {random_data}
                 </context>
                 
                 fill the title in title, summary in summary, and url in url
+                
+                add the summary to summary response
+                
+                add title to title 
+                add url to url
+                
+                please 
                 """
             )
             
-            print(response.text)
-            
+            try:
+                fixed_text = response.text
+
+                response_data = json.loads(fixed_text)
+                
+            except json.JSONDecodeError:
+                return Response({
+                    "status": 500,
+                    "message": "Failed to parse response from chat session",
+                    "data": None
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             return Response({
                 "status": 200,
                 "message": "Success",
-                "data": json.loads(response.text)
+                "data": response_data
             }, status=status.HTTP_200_OK)
             
             
