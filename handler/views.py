@@ -342,7 +342,8 @@ class ResearchRecommendation(APIView):
             return Response({
                 "status": 200,
                 "message": "Success",
-                "data": response_data
+                "data": response_data,
+                "keyword": search_request
             }, status=status.HTTP_200_OK)
             
             
